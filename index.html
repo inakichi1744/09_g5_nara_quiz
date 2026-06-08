@@ -125,6 +125,16 @@ body::before { content: ""; position: fixed; inset: 0; background: radial-gradie
 .tc-badge.locked { background:rgba(92,74,30,0.1); color:#b09060; border:1px dashed rgba(92,74,30,0.25); }
 .stars { font-size:1.8rem; letter-spacing:4px; margin:8px 0; }
 .result-btns { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+
+/* ===== 称号獲得 派手演出 ===== */
+#title-overlay.show .title-scroll{ animation:titlePop .6s cubic-bezier(.34,1.7,.5,1) both, titleGlow2 1.4s .6s ease-in-out infinite; box-shadow:0 0 0 4px rgba(255,215,0,.3),0 14px 50px rgba(0,0,0,.5); }
+@keyframes titlePop{0%{transform:scale(.3) rotate(-10deg);opacity:0;}60%{transform:scale(1.08) rotate(3deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
+@keyframes titleGlow2{0%,100%{box-shadow:0 0 0 4px rgba(255,215,0,.3),0 14px 50px rgba(0,0,0,.5);}50%{box-shadow:0 0 0 12px rgba(255,215,0,.55),0 14px 64px rgba(255,180,0,.55);}}
+#title-overlay.show .title-emoji{ animation:titleEmojiPop .8s ease both; }
+@keyframes titleEmojiPop{0%{transform:scale(0) rotate(-180deg);}70%{transform:scale(1.35) rotate(12deg);}100%{transform:scale(1) rotate(0);}}
+.tap-hint{ font-size:.7rem; opacity:.55; margin-top:10px; }
+.confetti-piece{ position:fixed; top:-12vh; width:10px; height:14px; border-radius:2px; opacity:.95; z-index:1200; pointer-events:none; animation:confettiFall linear forwards; }
+@keyframes confettiFall{ to{ transform:translateY(120vh) rotate(720deg); } }
 </style>
 </head>
 <body>
@@ -137,13 +147,14 @@ body::before { content: ""; position: fixed; inset: 0; background: radial-gradie
   <button class="btn-levelup-ok" onclick="closeLevelup()">よし！続けるぞ ▶</button>
 </div>
 
-<div id="title-overlay">
-  <div class="title-scroll">
+<div id="title-overlay" onclick="closeTitleOverlay()">
+  <div class="title-scroll" onclick="event.stopPropagation()">
     <div class="title-new">🎊 称号獲得！</div>
     <div class="title-emoji" id="to-emoji">🦌</div>
     <div class="title-main" id="to-title"></div>
     <div class="title-desc" id="to-desc"></div>
-    <button class="btn-title-ok" onclick="closeTitleOverlay()">受け取る！</button>
+    <button class="btn-title-ok" onclick="closeTitleOverlay()">受け取る！ ✨</button>
+    <div class="tap-hint">画面をタップでとじる</div>
   </div>
 </div>
 
@@ -155,8 +166,12 @@ body::before { content: ""; position: fixed; inset: 0; background: radial-gradie
   <div class="intro-card">
     <div class="intro-tags">
       <span class="itag" id="q-count-tag">🎯 全18問</span>
-      <span class="itag">⏱ 約15分</span>
-      <span class="itag">📚 小5 社会</span>
+      <span class="itag">平城京</span>
+      <span class="itag">木簡</span>
+      <span class="itag">東大寺の大仏</span>
+      <span class="itag">遣唐使・鑑真</span>
+      <span class="itag">正倉院</span>
+      <span class="itag">歴史書</span>
     </div>
     <div class="intro-desc">経験値を手に入れてレベルアップ！<br>全ての称号を手に入れよう！</div>
   </div>
@@ -262,11 +277,9 @@ const LEVELS = [
 ];
 
 const TITLES = [
-  { id:"start",    emoji:"📜", name:"奈良の民",     desc:"クイズに挑戦した！",        cond:(r,c,w)=>true },
-  { id:"noerror",  emoji:"🏹", name:"無傷の遣唐使", desc:"1問もミスせずにクリア！",   cond:(r,c,w)=>w===0 && r.length>0 },
-  { id:"half",     emoji:"🛕", name:"仏法の学徒",   desc:"半分以上正解した！",        cond:(r,c,w)=>c>=Math.ceil(r.length/2) },
-  { id:"speed",    emoji:"⚡", name:"知の探求者",   desc:"10問以上正解した！",        cond:(r,c,w)=>c>=10 },
-  { id:"allclear", emoji:"👑", name:"聖武天皇",     desc:"全問正解！最高の称号！",    cond:(r,c,w)=>w===0 && c===r.length && r.length>0 },
+  { id:'half', emoji:'🏯', name:'平城京 びと', desc:'半分以上 正解！', cond:(r,c,w)=>c>=Math.ceil(r.length*0.5) },
+  { id:'eighty', emoji:'🙏', name:'大仏ファン', desc:'8割以上 正解！', cond:(r,c,w)=>c>=Math.ceil(r.length*0.8) },
+  { id:'allclear', emoji:'👑', name:'奈良の大僧正', desc:'全問正解！すごい！', cond:(r,c,w)=>c===r.length },
 ];
 
 const ALL_QUESTIONS = [
@@ -458,7 +471,20 @@ function showTitleOverlay(t,cb){
   document.getElementById("to-title").textContent=t.name;
   document.getElementById("to-desc").textContent=t.desc;
   document.getElementById("title-overlay").classList.add("show");
+  spawnConfetti();
   titleCallback=cb||null;
+}
+function spawnConfetti(){
+  const colors=["#ffd700","#ff7043","#42a5f5","#66bb6a","#ab47bc","#ec407a"];
+  for(let i=0;i<28;i++){
+    const c=document.createElement("div"); c.className="confetti-piece";
+    c.style.left=Math.random()*100+"vw";
+    c.style.background=colors[i%colors.length];
+    c.style.animationDuration=(1.2+Math.random()*1.3)+"s";
+    c.style.animationDelay=(Math.random()*0.3)+"s";
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),2900);
+  }
 }
 function closeTitleOverlay(){
   document.getElementById("title-overlay").classList.remove("show");
@@ -483,9 +509,7 @@ function startQuiz(questionSet){
   document.getElementById("hud-ok").textContent="0";
   document.getElementById("hud-ng").textContent="0";
   updateHUD(); renderQuestion();
-  if(!isReview && !earnedTitles.includes(TITLES[0].id)){
-    setTimeout(()=>{ showTitleOverlay(TITLES[0]); earnedTitles.push(TITLES[0].id); },600);
-  }
+  /* 開始時の称号演出は廃止（称号は5割/8割/全問で獲得） */
 }
 function renderQuestion(){
   const q=questions[currentIndex];
@@ -613,8 +637,8 @@ function showResult(){
   document.getElementById("res-pct").textContent=Math.round(pct*100)+"%";
   const newTitles=TITLES.filter(t=>t.id!=="start"&&!earnedTitles.includes(t.id)&&t.cond(results.map(r=>r.isCorrect),correctCount,wrongCount));
   newTitles.forEach(t=>earnedTitles.push(t.id));
-  const topTitle=[...TITLES].reverse().find(t=>earnedTitles.includes(t.id))||TITLES[0];
-  document.getElementById("res-title-disp").textContent=topTitle.emoji+" "+topTitle.name;
+  const topTitle=[...TITLES].reverse().find(t=>earnedTitles.includes(t.id));
+  document.getElementById("res-title-disp").textContent=topTitle?(topTitle.emoji+" "+topTitle.name):"称号は おあずけ… もう一度！";
   const grid=document.getElementById("tc-grid"); grid.innerHTML="";
   TITLES.forEach(t=>{
     const span=document.createElement("span");
@@ -643,7 +667,7 @@ function showResult(){
     }
   });
   document.getElementById("review-btn").style.display=results.some(r=>!r.isCorrect)?"block":"none";
-  if(newTitles.length>0){ setTimeout(()=>{ showTitleOverlay(newTitles[0]); },800); }
+  if(newTitles.length>0){ setTimeout(()=>{ showTitleOverlay(newTitles[newTitles.length-1]); },800); }
 }
 function toggleExp(btn){
   const expTr=btn._expTr; const isShown=expTr.style.display!=="none";
